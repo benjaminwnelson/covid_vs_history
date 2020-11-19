@@ -1,0 +1,174 @@
+---
+title: "covid vs historical events"
+author: Benjamin W. Nelson https://benjaminnelson.mystrikingly.com
+output: html_document
+---
+
+#Sources
+https://en.wikipedia.org/wiki/United_States_military_casualties_of_war
+
+#Set Working Directory
+```{r}
+setwd("~/Desktop")
+```
+
+# Load Packages_______________________________________
+```{r message=FALSE}
+library(tidyverse)
+library(tidyr)
+library(tidylog)
+library(ggplot2)
+library(dplyr)
+library(psych)
+library(lubridate)
+library(summarytools)
+library(styler)
+library(readr)
+library(janitor)
+library(magrittr)
+```
+
+#Create daily mean deaths
+##COVID
+```{r}
+us_covid_deaths <- 250579
+
+day_of_first_case <- as.Date("2020-01-20", "%Y-%m-%d")
+
+today_date <- Sys.Date()
+
+days_since_first_case <-  as.numeric(difftime(today_date, day_of_first_case, units = "days"))
+
+years_since_first_case <- days_since_first_case / 365
+
+covid_deaths_per_day <- us_covid_deaths / days_since_first_case
+
+covid_deaths_per_day
+```
+
+##Civil War
+```{r}
+civil_deaths <- 655000
+
+day_civil_enter <- as.Date("1861-04-12", "%Y-%m-%d")
+
+day_civil_exit <- as.Date("1865-05-13", "%Y-%m-%d")
+
+civil_days <- as.numeric(difftime(day_civil_exit, day_civil_enter, units = "days"))
+
+civil_years <- civil_days / 365
+
+civil_deaths_per_day <- civil_deaths / civil_days
+
+civil_deaths_per_day
+```
+
+
+##WWI
+```{r}
+ww1_deaths <- 116516
+
+day_ww1_enter <- as.Date("1917-04-06", "%Y-%m-%d")
+
+day_ww1_exit <- as.Date("1918-11-11", "%Y-%m-%d")
+
+ww1_days <- as.numeric(difftime(day_ww1_exit, day_ww1_enter, units = "days"))
+
+ww1_years <- ww1_days / 365
+
+ww1_deaths_per_day <- ww1_deaths / ww1_days
+
+ww1_deaths_per_day
+```
+
+##WWII
+```{r}
+ww2_deaths <- 405399 #military and civilian
+
+day_ww2_enter <- as.Date("1941-12-07", "%Y-%m-%d")
+
+day_ww2_exit <- as.Date("1945-09-02", "%Y-%m-%d")
+
+ww2_days <- as.numeric(difftime(day_ww2_exit, day_ww2_enter, units = "days"))
+
+ww2_years <- ww2_days / 365
+
+ww2_deaths_per_day <- ww2_deaths / ww2_days
+
+ww2_deaths_per_day
+```
+
+##Vietnam
+```{r}
+vietnam_deaths <- 58209
+
+day_vietnam_enter <- as.Date("1965-03-08", "%Y-%m-%d")
+
+day_vietnam_exit <- as.Date("1973-01-27", "%Y-%m-%d")
+
+vietnam_days <- as.numeric(difftime(day_vietnam_exit, day_vietnam_enter, units = "days"))
+
+vietnam_years <- vietnam_days / 365
+
+vietnam_deaths_per_day <- vietnam_deaths / vietnam_days
+
+vietnam_deaths_per_day
+```
+
+#Concatenate
+```{r}
+event_deaths <- c(covid_deaths_per_day, civil_deaths_per_day, ww1_deaths_per_day, ww2_deaths_per_day, vietnam_deaths_per_day)
+event_deaths
+
+event_names <- c("COVID-19", "Civil War", "WWI", "WWII", "Vietnam")
+
+event_years <- c(days_since_first_case, civil_days, ww1_days, ww2_days, vietnam_days)
+
+column_1_name <- "Historical_Event"
+column_2_name <- "Average_Daily_Deaths"
+column_3_name <- "Event_Years"
+
+require(reshape2)
+df <- melt(data.frame(event_names, event_deaths))
+
+df <- df %>% 
+  dplyr::select(-variable) %>% 
+  dplyr::rename(average_daily_deaths = value)
+
+print(df)
+```
+
+#Figure
+```{r}
+ggplot(df, aes(x = reorder(event_names, -event_deaths), y = event_deaths)) +
+  geom_bar(stat = "identity", fill="#f68060", alpha=.6, width=.4) +
+  xlab("Historical Event") +
+  ylab("Average Daily Deaths") +
+  geom_text(aes(label= round(event_deaths, digits = 0), vjust=-1)) +
+  ylim(0, 850)
+
+
+ggplot(df, aes(x = reorder(event_names, -event_deaths), y = event_deaths)) +
+  xlab("Historical Event") +
+  ylab("Average Daily Deaths") +
+  geom_text(aes(label= round(event_deaths, digits = 0), vjust=-1)) +
+  ylim(0, 850) +
+  geom_segment( aes(xend=event_names, yend=0)) +
+   geom_point(size=4, color="#f68060")
+
+figure <- ggplot(df, aes(x = reorder(event_names, -event_deaths), y = event_deaths)) +
+  xlab("Historical Event") +
+  ylab("Average Daily Deaths") +
+  geom_text(aes(label= round(event_deaths, digits = 0), vjust=-1)) +
+  ylim(0, 850) +
+  geom_segment( aes(xend=event_names, yend=0)) +
+   geom_point(size=4, color="#f68060")
+
+figure + theme(axis.ticks = element_line(colour = "black"), 
+    axis.text = element_text(colour = "black"), 
+    axis.text.x = element_text(colour = "black"), 
+    axis.text.y = element_text(colour = "black"), 
+    panel.background = element_rect(fill = "white"))
+```
+
+
